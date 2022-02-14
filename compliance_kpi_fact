@@ -1,0 +1,67 @@
+with	
+	
+    cte_dim_numerator_type_names --assigning numbers to numerator names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.numerator_type_name asc) AS numerator_type_name_key, 
+        kpi_fact.numerator_type_name
+        from prod.kpi_fact
+        where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        ),
+
+	cte_dim_denominator_type_names --assigning numbers to denominator names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.denominator_type_name asc) AS denominator_type_name_key, 
+        kpi_fact.denominator_type_name
+        from prod.kpi_fact
+        where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        )
+        
+	cte_dim_context_id_type_name --assigning numbers to context names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.denominator_type_name asc) AS denominator_type_name_key, 
+        kpi_fact.context_id_type_name 
+        from prod.kpi_fact
+        where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        )
+
+select -- fact table
+		session_dim.session_pk as session_fk,
+    scene_dim.scene_pk as session_fk,
+		session_dim.session_explorer_url,
+    session_dim.scene_explorer_url,
+		kpi_fact.visit_date,
+		store_dim.store_pk as store_fk,
+		user_dim.user_pk as user_fk,
+		cast (user_dim.user_pk || 0 || store_dim.store_pk as int64) as ownership_fk,
+		kpi_fact.kpi_id,
+		kpi_fact.kpi_name,
+		cast(kpi_fact.kpi_id || cte_dim_numerator_type_names.numerator_type_name_key || kpi_fact.numerator_id || cte_dim_denominator_type_names.denominator_type_name_key || kpi_fact.denominator_id as int64) as kpi_fk_service,
+		product_dim.product_pk as product_fk,
+		kpi_fact.numerator_type_name,
+		kpi_fact.numerator_id,
+		kpi_fact.denominator_type_name,
+		kpi_fact.denominator_id,
+    kpi_fact.context_id_type_name,
+		kpi_fact.context_id,
+    kpi_fact.context_id,
+    kpi_fact.result,
+		cast(kpi_fact.result_value as string) result_value,
+	from prod.kpi_fact
+	join cte_dim_numerator_type_names on kpi_fact.numerator_type_name = cte_dim_numerator_type_names.numerator_type_name
+	join cte_dim_denominator_type_names  on kpi_fact.denominator_type_name = cte_dim_denominator_type_names.denominator_type_name
+  join cte_dim_context_id_type_name on kpi_fact.context_id_type_name = context_id_type_name.context_id_type_name
+	join `trax-cpg-dwh-int.module_int.session_dim` session_dim on kpi_fact.session_fk = session_dim.session_pk_service
+	join `trax-cpg-dwh-int.module_int.store_dim` store_dim on kpi_fact.store_fk = store_dim.store_pk_service
+	join `trax-cpg-dwh-int.module_int.user_dim` user_dim on kpi_fact.user_fk = user_dim.user_pk_service
+	join `trax-cpg-dwh-int.module_int.product_dim` product_dim on kpi_fact.project_name || kpi_fact.numerator_id = product_dim.product_pk_service 
+	where 
+		kpi_fact.project_name in ('beiersdorfru')
+		and kpi_fact.kpi_name in ('SOS CATEGORY OUT OF STORE')
+    and kpi_fact.result_type='KPI SCORE'
+		and kpi_fact.visit_date >= '2021-01-01'
