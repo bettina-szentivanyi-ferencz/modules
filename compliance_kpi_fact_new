@@ -1,0 +1,328 @@
+-- - get distinct values from fact into temporary table, create the PK on the fly
+create table module_int.compliance_kpi_fact_numerator_dim
+ CLUSTER BY
+   numerator_path, numerator_id AS
+(    
+    
+   select distinct 
+    kpi_fact.project_name,
+    cast (kpi_fact.project_name||kpi_fact.numerator_id || kpi_fact.numerator_path as string) as numerator_name_pk,
+    kpi_fact.numerator_path,
+    kpi_fact.numerator_id
+    from prod.kpi_fact
+    where 	kpi_fact.project_name in ('beiersdorfru')
+		and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
+        and (kpi_fact.result_value in ('PASS','FAIL') or kpi_fact.score_value in ('PASS','FAIL')) -- PASS/FAIL need to be configurable in the future
+		and kpi_fact.visit_date >= '2020-01-01');
+
+-- add column with values
+
+create table module_int.compliance_kpi_fact_numerator_dim_with_values
+as
+(
+select 
+    project_name,
+    numerator_name_pk,
+    numerator_path,
+    numerator_id,
+		cast(CASE
+		WHEN 
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.product_id") 
+            THEN (SELECT distinct product_name FROM prod.product_dim nested_product_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_product_dim.product_id 
+            and nested_kpi_fact.project_name = nested_product_dim.project_name 
+            and nested_product_dim.is_latest_version is true and nested_kpi_fact.numerator_path='prod.product_dim.product_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.brand_id") 
+            THEN (SELECT distinct brand_name FROM prod.product_dim nested_product_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_product_dim.brand_id 
+            and nested_kpi_fact.project_name = nested_product_dim.project_name 
+            and nested_product_dim.is_latest_version is true 
+            and nested_kpi_fact.numerator_path='prod.product_dim.brand_id')
+
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.manufacturer_id") 
+            THEN (SELECT distinct manufacturer_name FROM prod.product_dim nested_product_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id
+            and nested_kpi_fact.numerator_id = nested_product_dim.manufacturer_id 
+            and nested_kpi_fact.project_name = nested_product_dim.project_name 
+            and nested_product_dim.is_latest_version is true 
+            and nested_kpi_fact.numerator_path='prod.product_dim.manufacturer_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.category_id") 
+            THEN (SELECT distinct category_name FROM prod.product_dim nested_product_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_product_dim.category_id 
+            and nested_kpi_fact.project_name =nested_product_dim.project_name
+            and nested_product_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.product_dim.category_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.sub_category_id") 
+            THEN (SELECT distinct sub_category_name FROM prod.product_dim nested_product_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+           and  nested_kpi_fact.numerator_id = nested_product_dim.sub_category_id 
+            and nested_kpi_fact.project_name = nested_product_dim.project_name 
+            and nested_product_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.product_dim.sub_category_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.store_id") 
+            THEN (SELECT distinct store_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_store_dim.store_id 
+            and nested_kpi_fact.project_name = nested_store_dim.project_name 
+            and nested_store_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.store_dim.store_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.store_type_id") 
+            THEN (SELECT distinct store_type_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+           and  nested_kpi_fact.numerator_id = nested_store_dim.store_type_id 
+            and nested_kpi_fact.project_name = nested_store_dim.project_name 
+            and nested_store_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.store_dim.store_type_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.region_id") 
+            THEN (SELECT distinct region_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_store_dim.region_id 
+            and nested_kpi_fact.project_name = nested_store_dim.project_name
+            and nested_store_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.store_dim.region_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.retailer_id") 
+            THEN (SELECT distinct retailer_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact 
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+           and  nested_kpi_fact.numerator_id = nested_store_dim.retailer_id  
+            and nested_kpi_fact.project_name = nested_store_dim.project_name 
+            and nested_store_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.store_dim.retailer_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.country_id") 
+            THEN (SELECT distinct country_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact  
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_store_dim.country_id 
+            and nested_kpi_fact.project_name = nested_store_dim.project_name 
+            and nested_store_dim.is_latest_version is true  
+            and nested_kpi_fact.numerator_path='prod.store_dim.country_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.store_dim.district_id") 
+            THEN (SELECT distinct district_name FROM prod.store_dim nested_store_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact 
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+           and  nested_kpi_fact.numerator_id = nested_store_dim.district_id 
+           and nested_kpi_fact.project_name = nested_store_dim.project_name 
+           and nested_store_dim.is_latest_version is true  
+           and nested_kpi_fact.numerator_path='prod.store_dim.district_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.custom_entity_dim.entity_id") 
+            THEN (SELECT distinct entity_name FROM prod.custom_entity_dim nested_custom_entity_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and  nested_kpi_fact.numerator_id = nested_custom_entity_dim.entity_id
+            and nested_kpi_fact.project_name = nested_custom_entity_dim.project_name
+            and nested_kpi_fact.numerator_path='prod.custom_entity_dim.entity_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.scene_dim.scene_id") 
+            THEN (SELECT distinct scene_pk FROM prod.scene_dim nested_scene_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+           and nested_kpi_fact.numerator_id = nested_scene_dim.scene_id
+            and nested_kpi_fact.project_name = nested_scene_dim.project_name 
+            and nested_kpi_fact.numerator_path='prod.scene_dim.scene_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.session_dim.session_id") 
+            THEN (SELECT distinct session_pk FROM prod.session_dim nested_session_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_session_dim.session_id  
+            and nested_kpi_fact.project_name = nested_session_dim.project_name 
+            and nested_kpi_fact.numerator_path='prod.session_dim.session_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.task_dim.task_id") 
+            THEN (SELECT distinct task_name FROM prod.task_dim nested_task_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_task_dim.task_id  
+            and nested_kpi_fact.project_name = nested_task_dim.project_name  
+            and nested_kpi_fact.numerator_path='prod.task_dim.task_id')
+		--WHEN
+		--STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.task_dim.location_type_id") 
+         	--   THEN (SELECT distinct location_type_name FROM prod.task_dim nested_task_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+         	--WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+        	 --and nested_kpi_fact.numerator_id = nested_task_dim.location_type_id 
+         	--and nested_kpi_fact.project_name = nested_task_dim.project_name 
+         	--and nested_kpi_fact.numerator_path='prod.task_dim.location_type_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.assortment_dim.assortment_id") 
+            THEN (SELECT distinct assortment_name FROM prod.assortment_dim nested_assortment_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+             and nested_kpi_fact.numerator_id = nested_assortment_dim.assortment_id 
+             and nested_kpi_fact.project_name = nested_assortment_dim.project_name 
+             and nested_kpi_fact.numerator_path='prod.assortment_dim.assortment_id')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.survey_question_answer") 
+            THEN (SELECT distinct answer_text FROM prod.survey_answer_dim nested_survey_answer_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_survey_answer_dim.survey_answer_id 
+            and nested_kpi_fact.project_name = nested_survey_answer_dim.project_name 
+            and nested_kpi_fact.numerator_path='project_tables.survey_question_answer')
+
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.kpi_external_targets") 
+            THEN (SELECT distinct key_json FROM prod.kpi_external_targets_dim nested_kpi_external_targets_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_kpi_external_targets_dim.external_target_id 
+            and nested_kpi_fact.project_name = nested_kpi_external_targets_dim.project_name 
+            and nested_kpi_fact.numerator_path='project_tables.kpi_external_targets')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.survey_question") 
+            THEN (SELECT distinct question_text FROM prod.survey_dim nested_survey_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_survey_dim.survey_id
+            and nested_kpi_fact.project_name = nested_survey_dim.project_name
+            and nested_kpi_fact.numerator_path='project_tables.survey_question')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.store_task_area_group_items") 
+            THEN (SELECT distinct area_group_items_name FROM prod.store_task_area_group_dim nested_store_task_area_group_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_store_task_area_group_dim.area_group_items_id
+            and nested_kpi_fact.project_name = nested_store_task_area_group_dim.project_name 
+            and nested_kpi_fact.numerator_path='project_tables.store_task_area_group_items')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display") 
+            THEN (SELECT distinct display_name FROM prod.display_dim nested_display_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id  
+            and nested_kpi_fact.numerator_id = nested_display_dim.display_id
+            and nested_kpi_fact.project_name = nested_display_dim.project_name
+            and nested_kpi_fact.numerator_path='project_tables.display')
+		WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display.display_name") 
+            THEN (SELECT distinct display_name FROM prod.display_dim nested_display_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_display_dim.display_id
+            and nested_kpi_fact.project_name = nested_display_dim.project_name 
+            and nested_kpi_fact.numerator_path='project_tables.display.display_name')
+						WHEN
+		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display_definition") 
+            THEN (SELECT distinct display_name FROM prod.display_dim nested_display_dim, module_int.compliance_kpi_fact_numerator_dim nested_kpi_fact 
+            WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
+            and nested_kpi_fact.numerator_id = nested_display_dim.display_id 
+            and nested_kpi_fact.project_name = nested_display_dim.project_name 
+            and nested_kpi_fact.numerator_path='project_tables.display_definition')
+		ELSE 'None' 
+        END as string) AS numerator_name
+        from  module_int.compliance_kpi_fact_numerator_dim);
+
+        -- join the original values to KPI fact (while creating the data mart table)
+
+drop table module_int.compliance_kpi_fact;
+create table module_int.compliance_kpi_fact
+as(
+
+with	
+	
+    cte_dim_numerator_type_names --assigning numbers to numerator names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.numerator_type_name asc) AS numerator_type_name_key, 
+        kpi_fact.numerator_type_name
+        from prod.kpi_fact
+        where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        ),
+
+	cte_dim_denominator_type_names --assigning numbers to denominator names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.denominator_type_name asc) AS denominator_type_name_key, 
+        kpi_fact.denominator_type_name
+        from prod.kpi_fact
+        where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        ),
+        
+	cte_dim_context_type_names --assigning numbers to context names to make the product_dim join in PBI more efficient
+    as
+    (select distinct
+       dense_rank() OVER (ORDER BY kpi_fact.context_id_type_name asc) AS context_type_name_key, 
+        kpi_fact.context_id_type_name 
+        from prod.kpi_fact
+       where kpi_fact.project_name in ('beiersdorfru')
+        order by 1 asc
+        ),
+		
+	cte_dim_scene 
+	as
+	(select
+		scene_pk,
+		scene_explorer_url
+		from `trax-cpg-dwh-prod.prod.scene_dim` scene_dim
+		where scene_dim.project_name in ('beiersdorfru')
+		and scene_dim.visit_date >= '2020-01-01'
+	),
+cte_kpi_fact
+	as
+	(
+	select -- fact table
+		session_dim.session_pk as session_fk,
+        cte_dim_scene.scene_pk as scene_fk,
+		session_dim.session_explorer_url,
+        cte_dim_scene.scene_explorer_url,
+		kpi_fact.visit_date,
+		store_dim.store_pk as store_fk,
+		user_dim.user_pk as user_fk,
+		cast (user_dim.user_id || 0 || store_dim.store_id as int64) as ownership_fk,
+		kpi_fact.kpi_id,
+		kpi_fact.kpi_name,
+		cast(kpi_fact.kpi_id || cte_dim_numerator_type_names.numerator_type_name_key || kpi_fact.numerator_id || cte_dim_denominator_type_names.denominator_type_name_key || kpi_fact.denominator_id || cte_dim_context_type_names.context_type_name_key || kpi_fact.context_id as int64) as kpi_fk_service, -- unique identifier of the kpi
+		cast (kpi_fact.project_name||kpi_fact.numerator_id || kpi_fact.numerator_path as string) as numerator_name_fk,
+		kpi_fact.numerator_type_name,
+		kpi_fact.numerator_id,
+		kpi_fact.denominator_type_name,
+		kpi_fact.denominator_id,
+        kpi_fact.context_id_type_name,
+		kpi_fact.context_id,
+        kpi_fact.result,
+		case when result_value = 'FAIL' then 0 
+		else 1 end as result_value,
+		case when score_value = 'FAIL' then 0 
+		else 1 end as score_value
+	from prod.kpi_fact
+	join cte_dim_numerator_type_names on kpi_fact.numerator_type_name = cte_dim_numerator_type_names.numerator_type_name
+	join cte_dim_denominator_type_names  on kpi_fact.denominator_type_name = cte_dim_denominator_type_names.denominator_type_name
+    	join cte_dim_context_type_names on kpi_fact.context_id_type_name = cte_dim_context_type_names.context_id_type_name
+	join prod.session_dim session_dim on kpi_fact.session_fk = session_dim.session_pk
+  	left join cte_dim_scene  on cte_dim_scene.scene_pk = kpi_fact.scene_fk
+	join prod.store_dim store_dim on kpi_fact.store_fk = store_dim.store_pk
+	join prod.user_dim user_dim on kpi_fact.user_fk = user_dim.user_pk
+	where 
+		kpi_fact.project_name in ('beiersdorfru')
+		and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
+        and (kpi_fact.result_value in ('PASS','FAIL') or kpi_fact.score_value in ('PASS','FAIL')) -- PASS/FAIL need to be configurable in the future
+		and kpi_fact.visit_date >= '2020-01-01')
+ select 
+
+ 		cte_kpi_fact.session_fk,
+    cte_kpi_fact.scene_fk,
+		cte_kpi_fact.session_explorer_url,
+    cte_kpi_fact.scene_explorer_url,
+		cte_kpi_fact.visit_date,
+		cte_kpi_fact.store_fk,
+		cte_kpi_fact.user_fk,
+		cte_kpi_fact.ownership_fk,
+		cte_kpi_fact.kpi_id,
+		cte_kpi_fact.kpi_name,
+		cte_kpi_fact.kpi_fk_service,
+		cte_kpi_fact.numerator_name_fk,
+		cte_kpi_fact.numerator_type_name,
+		cte_kpi_fact.numerator_id,
+        compliance_kpi_fact_numerator_dim_with_values.numerator_name,
+		cte_kpi_fact.denominator_type_name,
+		cte_kpi_fact.denominator_id,
+        cte_kpi_fact.context_id_type_name,
+		cte_kpi_fact.context_id,
+        cte_kpi_fact.result,
+		cte_kpi_fact.result_value,
+		cte_kpi_fact.score_value
+		from cte_kpi_fact
+		left join module_int.compliance_kpi_fact_numerator_dim_with_values compliance_kpi_fact_numerator_dim_with_values on cte_kpi_fact.numerator_name_fk=compliance_kpi_fact_numerator_dim_with_values.numerator_name_pk);
+
+drop table module_int.compliance_kpi_fact_numerator_dim;
+drop table module_int.compliance_kpi_fact_numerator_dim_with_values;
