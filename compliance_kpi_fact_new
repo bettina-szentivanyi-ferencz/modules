@@ -32,6 +32,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_product_dim.product_id 
             and nested_kpi_fact.project_name = nested_product_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_product_dim.is_latest_version is true and nested_kpi_fact.numerator_path='prod.product_dim.product_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.product_dim.brand_id") 
@@ -39,6 +40,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_product_dim.brand_id 
             and nested_kpi_fact.project_name = nested_product_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_product_dim.is_latest_version is true 
             and nested_kpi_fact.numerator_path='prod.product_dim.brand_id')
 
@@ -48,6 +50,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id
             and nested_kpi_fact.numerator_id = nested_product_dim.manufacturer_id 
             and nested_kpi_fact.project_name = nested_product_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_product_dim.is_latest_version is true 
             and nested_kpi_fact.numerator_path='prod.product_dim.manufacturer_id')
 		WHEN
@@ -56,6 +59,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_product_dim.category_id 
             and nested_kpi_fact.project_name =nested_product_dim.project_name
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_product_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.product_dim.category_id')
 		WHEN
@@ -64,6 +68,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
            and  nested_kpi_fact.numerator_id = nested_product_dim.sub_category_id 
             and nested_kpi_fact.project_name = nested_product_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_product_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.product_dim.sub_category_id')
 		WHEN
@@ -72,6 +77,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_store_dim.store_id 
             and nested_kpi_fact.project_name = nested_store_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_store_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.store_dim.store_id')
 		WHEN
@@ -80,6 +86,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
            and  nested_kpi_fact.numerator_id = nested_store_dim.store_type_id 
             and nested_kpi_fact.project_name = nested_store_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_store_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.store_dim.store_type_id')
 		WHEN
@@ -88,6 +95,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_store_dim.region_id 
             and nested_kpi_fact.project_name = nested_store_dim.project_name
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_store_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.store_dim.region_id')
 		WHEN
@@ -96,6 +104,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
            and  nested_kpi_fact.numerator_id = nested_store_dim.retailer_id  
             and nested_kpi_fact.project_name = nested_store_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_store_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.store_dim.retailer_id')
 		WHEN
@@ -104,6 +113,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_store_dim.country_id 
             and nested_kpi_fact.project_name = nested_store_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_store_dim.is_latest_version is true  
             and nested_kpi_fact.numerator_path='prod.store_dim.country_id')
 		WHEN
@@ -112,6 +122,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
            and  nested_kpi_fact.numerator_id = nested_store_dim.district_id 
            and nested_kpi_fact.project_name = nested_store_dim.project_name 
+	   and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
            and nested_store_dim.is_latest_version is true  
            and nested_kpi_fact.numerator_path='prod.store_dim.district_id')
 		WHEN
@@ -120,6 +131,7 @@ select
              WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and  nested_kpi_fact.numerator_id = nested_custom_entity_dim.entity_id
             and nested_kpi_fact.project_name = nested_custom_entity_dim.project_name
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='prod.custom_entity_dim.entity_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.scene_dim.scene_id") 
@@ -127,6 +139,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
            and nested_kpi_fact.numerator_id = nested_scene_dim.scene_id
             and nested_kpi_fact.project_name = nested_scene_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='prod.scene_dim.scene_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.session_dim.session_id") 
@@ -134,6 +147,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_session_dim.session_id  
             and nested_kpi_fact.project_name = nested_session_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='prod.session_dim.session_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.task_dim.task_id") 
@@ -141,6 +155,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_task_dim.task_id  
             and nested_kpi_fact.project_name = nested_task_dim.project_name  
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='prod.task_dim.task_id')
 		--WHEN
 		--STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.task_dim.location_type_id") 
@@ -148,6 +163,7 @@ select
          	--WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
         	 --and nested_kpi_fact.numerator_id = nested_task_dim.location_type_id 
          	--and nested_kpi_fact.project_name = nested_task_dim.project_name 
+		-- and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
          	--and nested_kpi_fact.numerator_path='prod.task_dim.location_type_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "prod.assortment_dim.assortment_id") 
@@ -155,6 +171,7 @@ select
              WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
              and nested_kpi_fact.numerator_id = nested_assortment_dim.assortment_id 
              and nested_kpi_fact.project_name = nested_assortment_dim.project_name 
+	     and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
              and nested_kpi_fact.numerator_path='prod.assortment_dim.assortment_id')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.survey_question_answer") 
@@ -162,6 +179,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_survey_answer_dim.survey_answer_id 
             and nested_kpi_fact.project_name = nested_survey_answer_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.survey_question_answer')
 
 		WHEN
@@ -170,6 +188,7 @@ select
              WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_kpi_external_targets_dim.external_target_id 
             and nested_kpi_fact.project_name = nested_kpi_external_targets_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.kpi_external_targets')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.survey_question") 
@@ -177,6 +196,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_survey_dim.survey_id
             and nested_kpi_fact.project_name = nested_survey_dim.project_name
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.survey_question')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.store_task_area_group_items") 
@@ -184,6 +204,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_store_task_area_group_dim.area_group_items_id
             and nested_kpi_fact.project_name = nested_store_task_area_group_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.store_task_area_group_items')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display") 
@@ -191,6 +212,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id  
             and nested_kpi_fact.numerator_id = nested_display_dim.display_id
             and nested_kpi_fact.project_name = nested_display_dim.project_name
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.display')
 		WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display.display_name") 
@@ -198,6 +220,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_display_dim.display_id
             and nested_kpi_fact.project_name = nested_display_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.display.display_name')
 						WHEN
 		STARTS_WITH(compliance_kpi_fact_numerator_dim.numerator_path, "project_tables.display_definition") 
@@ -205,6 +228,7 @@ select
             WHERE nested_kpi_fact.numerator_id=compliance_kpi_fact_numerator_dim.numerator_id 
             and nested_kpi_fact.numerator_id = nested_display_dim.display_id 
             and nested_kpi_fact.project_name = nested_display_dim.project_name 
+	    and compliance_kpi_fact_numerator_dim.project_name= nested_kpi_fact.project_name
             and nested_kpi_fact.numerator_path='project_tables.display_definition')
 		ELSE 'None' 
         END as string) AS numerator_name
