@@ -1,0 +1,225 @@
+with
+--note: custom numerator_type/denominator_type values are not supported
+--note: versioning not supported
+
+	--validating the hierarchy. We assume that one brand can only belong to a single manuf / one sub_cat can only belong to a single categ (for sub_cat-categ this approach is not realistic)
+	
+			--optional, only makes sense to add if we have kpis on this level
+			cte_v_list_manuf as -- list for hierarchy manuf/brand --OPTIONAL
+			(select distinct
+			project_name,
+			brand_id,
+			manufacturer_id
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			and product_is_active = true
+			and is_deleted = false
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+			cte_v_count_manuf as -- counting number of rows
+			(select 
+			project_name,
+			brand_id,
+			count(manufacturer_id) as countrows
+			from cte_v_list_manuf
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+
+			cte_validation_manuf as --check if a project is valid or not in terms of hierarchy
+			(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid
+			from cte_v_count_manuf
+			group by 1
+			),
+
+		
+			--optional, only makes sense to add if we have kpis on this level
+			cte_v_list_categ as  -- list for hierarchy categ/subcateg --OPTIONAL
+			(select distinct
+			project_name,
+			sub_category_id,
+			category_id
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			and product_is_active = true
+			and is_deleted = false
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+			cte_v_count_categ as -- counting number of rows
+			(select 
+			project_name,
+			sub_category_id,
+			count(category_id) as countrows
+			from cte_v_list_categ
+			group by 1,2
+			order by 1 asc, 3 desc
+			),
+
+			cte_validation_categ as --check if a project is valid or not in terms of hierarchy
+			(select
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid
+			from cte_v_count_categ
+			group by 1
+			),
+
+
+	--creating lists to determine num and denom types (categ, subcateg, manuf, brand are the ones which makes sense to add to the product dim)
+	
+		--optional, only makes sense to add if we have kpis on this level
+		cte_list_categ -- category list --OPTIONAL
+		as
+		(select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.category_id || '_category' as pk, 
+						-- note: in order to make the relationship work, 
+						--the fact table (based on kpi_fact) should have the numerator_type_name concatenated with numerator_id (or denom type name with denom_id)
+						--same approach in other tables, i.e scene_item_fact product_fk should be: "project_name || product_id || '_product'"
+			product_dim.category_id as id,
+			'category' as type_name,
+			product_dim.category_name,
+			cast (null as string) as sub_category_name,
+			cast (null as string) as manufacturer_name,
+			cast (null as string) as brand_name,
+			cast(null as bool) as own
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true --default
+			and product_is_active = true --config/programming
+			and is_deleted = false
+
+		),
+	
+		--optional, only makes sense to add if we have kpis on this level
+		cte_list_subcateg -- subcategory list --OPTIONAL
+		as
+		(select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.sub_category_id || '_subcategory' as pk, 
+						-- note: in order to make the relationship work, 
+						--the fact table (based on kpi_fact) should have the numerator_type_name concatenated with numerator_id (or denom type name with denom_id)
+						--same approach in other tables, i.e scene_item_fact product_fk should be: "project_name || product_id || '_product'"
+			product_dim.sub_category_id as id,
+			'subcategory' as type_name,
+			case when cte_validation_categ.is_valid = 1 then product_dim.category_name else cast (null as string) end as category_name,
+			product_dim.sub_category_name,
+			cast (null as string) as manufacturer_name,
+			cast (null as string) as brand_name,
+			cast(null as bool) as own
+			from prod.product_dim
+			left join cte_validation_categ on cte_validation_categ.project_name = product_dim.project_name
+			where product_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true --default
+			and product_is_active = true --config/programming
+			and is_deleted = false
+			and sub_category_id >= 0 --needed because there are negative values (invalid?)d?
+
+
+		),
+	
+		--optional, only makes sense to add if we have kpis on this level
+		cte_list_manuf -- manufacturer list --OPTIONAL
+		as
+		(select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.manufacturer_id || '_manufacturer' as pk, 
+						-- note: in order to make the relationship work, 
+						--the fact table (based on kpi_fact) should have the numerator_type_name concatenated with numerator_id (or denom type name with denom_id)
+						--same approach in other tables, i.e scene_item_fact product_fk should be: "project_name || product_id || '_product'"
+			product_dim.manufacturer_id as id,
+			'manufacturer' as type_name,
+			cast (null as string) as category_name,
+			cast (null as string) as sub_category_name,
+			product_dim.manufacturer_name,
+			cast (null as string) as brand_name,
+			product_dim.own
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true --default
+			and product_is_active = true --config/programming
+			and is_deleted = false
+
+
+		),
+	
+		--optional, only makes sense to add if we have kpis on this level
+		cte_list_brand -- brand list --OPTIONAL
+		as
+		(select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.brand_id || '_brand' as pk, 
+						-- note: in order to make the relationship work, 
+						--the fact table (based on kpi_fact) should have the numerator_type_name concatenated with numerator_id (or denom type name with denom_id)
+						--same approach in other tables, i.e scene_item_fact product_fk should be: "project_name || product_id || '_product'"
+			product_dim.brand_id as id,
+			'brand' as type_name,
+			cast (null as string) as category_name,
+			cast (null as string) as sub_category_name,
+			case when cte_validation_manuf.is_valid = 1 then product_dim.manufacturer_name else cast (null as string) end as manufacturer_name,
+			product_dim.brand_name,
+			product_dim.own
+			from prod.product_dim -- product_dim nameing is missing
+			left join cte_validation_manuf on cte_validation_manuf.project_name = product_dim.project_name
+			where product_dim.project_name in ('beiersdorfru') --config/programming --> product.dim is not needed
+			and is_latest_version = true --default
+			and product_is_active = true --config/programming
+			and is_deleted = false
+
+
+		),
+		
+	--merge cte tables
+
+    cte_list_full --union of the above cte tables
+    as
+    (select project_name,pk,id,type_name,category_name,sub_category_name,manufacturer_name,brand_name,own from cte_list_categ --OPTIONAL; 
+	union all
+	select project_name,pk,id,type_name,category_name,sub_category_name,manufacturer_name,brand_name,own from cte_list_subcateg --OPTIONAL; 
+	union all
+	select project_name,pk,id,type_name,category_name,sub_category_name,manufacturer_name,brand_name,own from cte_list_manuf --OPTIONAL; 
+	union all
+	select project_name,pk,id,type_name,category_name,sub_category_name,manufacturer_name,brand_name,own from cte_list_brand --OPTIONAL; 
+    )
+
+select --selecting the default product_dim --MANDATORY
+	product_dim.project_name,--MANDATORY
+    product_dim.project_name || product_id || '_product' as product_pk, --MANDATORY
+                -- note: in order to make the relationship work, 
+                --the fact table (based on kpi_fact) should have the numerator_type_name concatenated with numerator_id (or denom type name with denom_id)
+                --same approach in other tables, i.e scene_item_fact product_fk should be: "project_name || product_id || '_product'"
+	product_id as id,--MANDATORY
+	'product' as type_name, --MANDATORY
+	product_name,--MANDATORY
+	brand_name,--MANDATORY
+	manufacturer_name,--MANDATORY
+	category_name,--MANDATORY
+	sub_category_name,--MANDATORY
+    own
+from prod.product_dim --> '' is needed?
+where project_name in ('beiersdorfru') --config/programming --MANDATORY --> '' is needed?
+	and is_latest_version = true --default --MANDATORY
+	and product_is_active = true --config/programming
+	and is_deleted = false --MANDATORY
+
+
+	--optional; turn this on/off depending on the kpis
+	union all --add the full list to the default product_dim --OPTIONAL
+
+	select -- if more columns are needed, null values must be added here (controlled by config/programming?) --OPTIONAL
+		project_name,
+		pk as product_pk,
+		id,
+		type_name,
+		cast (null as string) as product_name,
+		brand_name,
+		manufacturer_name,
+		category_name,
+		sub_category_name,
+		own
+	from cte_list_full
