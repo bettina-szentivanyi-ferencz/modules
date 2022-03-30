@@ -1,3 +1,246 @@
+drop table module_int.compliance_kpi_fact_numerator_hierarchy;
+create table module_int.compliance_kpi_fact_numerator_hierarchy
+ CLUSTER BY
+   project_name, numerator_name_pk AS
+
+with
+cte_v_list_manuf as -- list for hierarchy manuf/brand --OPTIONAL
+			(select distinct
+			project_name,
+			brand_id,
+			manufacturer_id
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+cte_v_count_manuf as -- counting number of rows
+			(select 
+			project_name,
+			brand_id,
+			count(manufacturer_id) as countrows
+			from cte_v_list_manuf
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+cte_validation_manuf as -- check relatinship between manufacturer and brand (1-MANY)
+(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid_maunfacturer
+			from cte_v_count_manuf
+			group by 1),
+
+cte_v_list_brand as -- list for hierarchy brand/product --OPTIONAL
+			(select distinct
+			project_name,
+            product_id,
+			brand_id,
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+			cte_v_count_brand as -- counting number of rows
+			(select 
+			project_name,
+			product_id,
+			count(brand_id) as countrows
+			from cte_v_list_brand
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+cte_validation_brand as 
+(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid_brand
+			from cte_v_count_brand
+			group by 1),
+
+cte_v_list_country as -- list for hierarchy manuf/brand --OPTIONAL
+			(select distinct
+			project_name,
+			country_id,
+			region_id
+			from prod.store_dim
+			where store_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+cte_v_count_country as -- counting number of rows
+			(select 
+			project_name,
+			region_id,
+			count(country_id) as countrows
+			from cte_v_list_country
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+cte_validation_country as 
+(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid_country
+			from cte_v_count_country
+			group by 1),
+
+cte_v_list_region as -- list for hierarchy manuf/brand --OPTIONAL
+			(select distinct
+			project_name,
+			region_id,
+			city
+			from prod.store_dim
+			where store_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+cte_v_count_region as -- counting number of rows
+			(select 
+			project_name,
+			city,
+			count(region_id) as countrows
+			from cte_v_list_region
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+cte_validation_region as 
+(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid_region
+			from cte_v_count_region
+			group by 1),
+
+cte_v_list_city as -- list for hierarchy manuf/brand --OPTIONAL
+			(select distinct
+			project_name,
+			city,
+			store_id
+			from prod.store_dim
+			where store_dim.project_name in ('beiersdorfru')
+			and is_latest_version = true --default
+			order by 1 asc, 2 asc, 3 asc
+			),
+
+cte_v_count_city as -- counting number of rows
+			(select 
+			project_name,
+			store_id,
+			count(city) as countrows
+			from cte_v_list_city
+			group by 1,2
+			order by 1 asc, 3 desc 
+			),
+cte_validation_city as 
+(select --
+			project_name,
+			case when max(countrows) = 1 then 1 else 0 end as is_valid_city
+			from cte_v_count_city
+			group by 1),
+
+cte_full_brand_id as 
+(
+select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.brand_id || 'prod.product_dim.brand_id' as 	numerator_name_pk, 
+			product_dim.manufacturer_name,
+			'' as brand_name
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true), --default
+
+cte_with_validation_brand_id as 
+(
+select 
+cte_full_brand_id.project_name,
+cte_full_brand_id.numerator_name_pk,
+TO_JSON_STRING(STRUCT(
+        manufacturer_name
+    )) as numerator_hierachy
+from cte_full_brand_id, cte_validation_manuf
+where cte_full_brand_id.project_name=cte_validation_manuf.project_name
+and cte_validation_manuf.is_valid_maunfacturer=1),
+
+cte_full_product_id as 
+(
+select distinct
+			product_dim.project_name,
+			product_dim.project_name || product_dim.brand_id || 'prod.product_dim.product_id' as 	numerator_name_pk, 
+			product_dim.manufacturer_name,
+			product_dim.brand_name
+			from prod.product_dim
+			where product_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true), --default
+
+cte_with_validation_product_id as 
+(
+	select 
+cte_full_product_id.project_name,
+cte_full_product_id.numerator_name_pk,
+TO_JSON_STRING(STRUCT(
+        manufacturer_name,
+        brand_name
+    )) as numerator_hierachy
+from cte_full_product_id ,cte_validation_manuf, cte_validation_brand
+where 
+cte_full_product_id.project_name=cte_validation_manuf.project_name
+and cte_full_product_id.project_name=cte_validation_brand.project_name
+and cte_validation_manuf.is_valid_maunfacturer=1
+and cte_validation_brand.is_valid_brand=1),
+
+
+cte_full_store_id as 
+(
+select distinct
+			store_dim.project_name,
+			store_dim.project_name || store_dim.store_id || 'prod.product_dim.store_id' as 	numerator_name_pk, 
+			store_dim.country_name,
+			store_dim.region_name,
+            store_dim.city
+			from prod.store_dim
+			where store_dim.project_name in ('beiersdorfru') --config/programming
+			and is_latest_version = true), --default
+
+cte_with_validation_store_id as 
+(
+select 
+cte_full_store_id.project_name,
+cte_full_store_id.numerator_name_pk,
+TO_JSON_STRING(STRUCT(
+        country_name,
+        region_name,
+        city
+    )) as numerator_hierachy
+from cte_full_store_id , cte_validation_country, cte_validation_region, cte_validation_city
+where cte_full_store_id.project_name=cte_validation_country.project_name
+and cte_full_store_id.project_name=cte_validation_region.project_name
+and cte_full_store_id.project_name=cte_validation_city.project_name
+and cte_validation_country.is_valid_country=1
+and cte_validation_region.is_valid_region=1
+and cte_validation_city.is_valid_city=1)
+
+select
+project_name,
+numerator_name_pk,
+numerator_hierachy
+from cte_with_validation_brand_id
+union all
+select
+project_name,
+numerator_name_pk,
+numerator_hierachy
+from
+cte_with_validation_product_id
+union all 
+select
+project_name,
+numerator_name_pk,
+numerator_hierachy
+from cte_with_validation_store_id;  
+
+
+
 -- - get distinct values from fact into temporary table, create the PK on the fly
 create table module_int.compliance_kpi_fact_numerator_dim
  CLUSTER BY
@@ -321,12 +564,12 @@ cte_kpi_fact
 		and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
         and (kpi_fact.result_value in ('PASS','FAIL') or kpi_fact.score_value in ('PASS','FAIL')) -- PASS/FAIL need to be configurable in the future
 		and kpi_fact.visit_date >= '2020-01-01')
- select 
+select 
 
  		cte_kpi_fact.session_fk,
-    cte_kpi_fact.scene_fk,
+    		cte_kpi_fact.scene_fk,
 		cte_kpi_fact.session_explorer_url,
-    cte_kpi_fact.scene_explorer_url,
+   		cte_kpi_fact.scene_explorer_url,
 		cte_kpi_fact.visit_date,
 		cte_kpi_fact.store_fk,
 		cte_kpi_fact.user_fk,
@@ -337,16 +580,18 @@ cte_kpi_fact
 		cte_kpi_fact.numerator_name_fk,
 		cte_kpi_fact.numerator_type_name,
 		cte_kpi_fact.numerator_id,
-        compliance_kpi_fact_numerator_dim_with_values.numerator_name,
+       		compliance_kpi_fact_numerator_dim_with_values.numerator_name,
+        	compliance_kpi_fact_numerator_hierarchy.numerator_hierachy,
 		cte_kpi_fact.denominator_type_name,
 		cte_kpi_fact.denominator_id,
-        cte_kpi_fact.context_id_type_name,
+       		cte_kpi_fact.context_id_type_name,
 		cte_kpi_fact.context_id,
-        cte_kpi_fact.result,
+        	cte_kpi_fact.result,
 		cte_kpi_fact.result_value,
 		cte_kpi_fact.score_value
 		from cte_kpi_fact
-		left join module_int.compliance_kpi_fact_numerator_dim_with_values compliance_kpi_fact_numerator_dim_with_values on cte_kpi_fact.numerator_name_fk=compliance_kpi_fact_numerator_dim_with_values.numerator_name_pk);
+		left join module_int.compliance_kpi_fact_numerator_dim_with_values compliance_kpi_fact_numerator_dim_with_values on cte_kpi_fact.numerator_name_fk=compliance_kpi_fact_numerator_dim_with_values.numerator_name_pk
+        	left join module_int.compliance_kpi_fact_numerator_hierarchy compliance_kpi_fact_numerator_hierarchy on cte_kpi_fact.numerator_name_fk=compliance_kpi_fact_numerator_hierarchy.numerator_name_pk);
 
 drop table module_int.compliance_kpi_fact_numerator_dim;
 drop table module_int.compliance_kpi_fact_numerator_dim_with_values;
