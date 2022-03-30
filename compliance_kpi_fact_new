@@ -595,3 +595,4 @@ select
 
 drop table module_int.compliance_kpi_fact_numerator_dim;
 drop table module_int.compliance_kpi_fact_numerator_dim_with_values;
+drop table module_int.compliance_kpi_fact_numerator_hierarchy;
