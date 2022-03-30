@@ -10,7 +10,7 @@ cte_v_list_manuf as -- list for hierarchy manuf/brand --OPTIONAL
 			brand_id,
 			manufacturer_id
 			from prod.product_dim
-			where product_dim.project_name in ('beiersdorfru')
+			where product_dim.project_name in ('beiersdorfru','diageous')
 			and is_latest_version = true --default
 			order by 1 asc, 2 asc, 3 asc
 			),
@@ -37,7 +37,7 @@ cte_v_list_brand as -- list for hierarchy brand/product --OPTIONAL
             product_id,
 			brand_id,
 			from prod.product_dim
-			where product_dim.project_name in ('beiersdorfru')
+			where product_dim.project_name in ('beiersdorfru','diageous')
 			and is_latest_version = true --default
 			order by 1 asc, 2 asc, 3 asc
 			),
@@ -64,7 +64,7 @@ cte_v_list_country as -- list for hierarchy manuf/brand --OPTIONAL
 			country_id,
 			region_id
 			from prod.store_dim
-			where store_dim.project_name in ('beiersdorfru')
+			where store_dim.project_name in ('beiersdorfru','diageous')
 			and is_latest_version = true --default
 			order by 1 asc, 2 asc, 3 asc
 			),
@@ -91,7 +91,7 @@ cte_v_list_region as -- list for hierarchy manuf/brand --OPTIONAL
 			region_id,
 			city
 			from prod.store_dim
-			where store_dim.project_name in ('beiersdorfru')
+			where store_dim.project_name in ('beiersdorfru','diageous')
 			and is_latest_version = true --default
 			order by 1 asc, 2 asc, 3 asc
 			),
@@ -118,7 +118,7 @@ cte_v_list_city as -- list for hierarchy manuf/brand --OPTIONAL
 			city,
 			store_id
 			from prod.store_dim
-			where store_dim.project_name in ('beiersdorfru')
+			where store_dim.project_name in ('beiersdorfru','diageous')
 			and is_latest_version = true --default
 			order by 1 asc, 2 asc, 3 asc
 			),
@@ -147,7 +147,7 @@ select distinct
 			product_dim.manufacturer_name,
 			'' as brand_name
 			from prod.product_dim
-			where product_dim.project_name in ('beiersdorfru') --config/programming
+			where product_dim.project_name in ('beiersdorfru','diageous') --config/programming
 			and is_latest_version = true), --default
 
 cte_with_validation_brand_id as 
@@ -166,11 +166,11 @@ cte_full_product_id as
 (
 select distinct
 			product_dim.project_name,
-			product_dim.project_name || product_dim.brand_id || 'prod.product_dim.product_id' as 	numerator_name_pk, 
+			product_dim.project_name || product_dim.product_id || 'prod.product_dim.product_id' as 	numerator_name_pk, 
 			product_dim.manufacturer_name,
 			product_dim.brand_name
 			from prod.product_dim
-			where product_dim.project_name in ('beiersdorfru') --config/programming
+			where product_dim.project_name in ('beiersdorfru','diageous') --config/programming
 			and is_latest_version = true), --default
 
 cte_with_validation_product_id as 
@@ -199,7 +199,7 @@ select distinct
 			store_dim.region_name,
             store_dim.city
 			from prod.store_dim
-			where store_dim.project_name in ('beiersdorfru') --config/programming
+			where store_dim.project_name in ('beiersdorfru','diageous') --config/programming
 			and is_latest_version = true), --default
 
 cte_with_validation_store_id as 
@@ -222,20 +222,20 @@ and cte_validation_city.is_valid_city=1)
 
 select
 project_name,
-numerator_name_pk,
+cast(numerator_name_pk as string) as numerator_name_pk,
 numerator_hierachy
 from cte_with_validation_brand_id
 union all
 select
 project_name,
-numerator_name_pk,
+cast(numerator_name_pk as string) as numerator_name_pk,
 numerator_hierachy
 from
 cte_with_validation_product_id
 union all 
 select
 project_name,
-numerator_name_pk,
+cast(numerator_name_pk as string) as numerator_name_pk,
 numerator_hierachy
 from cte_with_validation_store_id;  
 
@@ -253,8 +253,8 @@ create table module_int.compliance_kpi_fact_numerator_dim
     kpi_fact.numerator_path,
     kpi_fact.numerator_id
     from prod.kpi_fact
-    where 	kpi_fact.project_name in ('beiersdorfru')
-		and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
+    where 	kpi_fact.project_name in ('beiersdorfru','diageous')
+		--and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
         and (kpi_fact.result_value in ('PASS','FAIL') or kpi_fact.score_value in ('PASS','FAIL')) -- PASS/FAIL need to be configurable in the future
 		and kpi_fact.visit_date >= '2020-01-01');
 
@@ -265,7 +265,7 @@ as
 (
 select 
     project_name,
-    numerator_name_pk,
+    cast(numerator_name_pk as string) as numerator_name_pk,
     numerator_path,
     numerator_id,
 		cast(CASE
@@ -491,7 +491,7 @@ with
        dense_rank() OVER (ORDER BY kpi_fact.numerator_type_name asc) AS numerator_type_name_key, 
         kpi_fact.numerator_type_name
         from prod.kpi_fact
-        where kpi_fact.project_name in ('beiersdorfru')
+        where kpi_fact.project_name in ('beiersdorfru','diageous')
         order by 1 asc
         ),
 
@@ -501,7 +501,7 @@ with
        dense_rank() OVER (ORDER BY kpi_fact.denominator_type_name asc) AS denominator_type_name_key, 
         kpi_fact.denominator_type_name
         from prod.kpi_fact
-        where kpi_fact.project_name in ('beiersdorfru')
+        where kpi_fact.project_name in ('beiersdorfru','diageous')
         order by 1 asc
         ),
         
@@ -511,7 +511,7 @@ with
        dense_rank() OVER (ORDER BY kpi_fact.context_id_type_name asc) AS context_type_name_key, 
         kpi_fact.context_id_type_name 
         from prod.kpi_fact
-       where kpi_fact.project_name in ('beiersdorfru')
+       where kpi_fact.project_name in ('beiersdorfru','diageous')
         order by 1 asc
         ),
 		
@@ -521,7 +521,7 @@ with
 		scene_pk,
 		scene_explorer_url
 		from `trax-cpg-dwh-prod.prod.scene_dim` scene_dim
-		where scene_dim.project_name in ('beiersdorfru')
+		where scene_dim.project_name in ('beiersdorfru','diageous')
 		and scene_dim.visit_date >= '2020-01-01'
 	),
 cte_kpi_fact
@@ -538,7 +538,7 @@ cte_kpi_fact
 		cast (user_dim.user_id || 0 || store_dim.store_id as int64) as ownership_fk,
 		kpi_fact.kpi_id,
 		kpi_fact.kpi_name,
-		cast(kpi_fact.kpi_id || cte_dim_numerator_type_names.numerator_type_name_key || kpi_fact.numerator_id || cte_dim_denominator_type_names.denominator_type_name_key || kpi_fact.denominator_id || cte_dim_context_type_names.context_type_name_key || kpi_fact.context_id as int64) as kpi_fk_service, -- unique identifier of the kpi
+		cast(kpi_fact.kpi_id || cte_dim_numerator_type_names.numerator_type_name_key || kpi_fact.numerator_id || cte_dim_denominator_type_names.denominator_type_name_key || kpi_fact.denominator_id || cte_dim_context_type_names.context_type_name_key || kpi_fact.context_id as string) as kpi_fk_service, -- unique identifier of the kpi
 		cast (kpi_fact.project_name||kpi_fact.numerator_id || kpi_fact.numerator_path as string) as numerator_name_fk,
 		kpi_fact.numerator_type_name,
 		kpi_fact.numerator_id,
@@ -560,8 +560,8 @@ cte_kpi_fact
 	join prod.store_dim store_dim on kpi_fact.store_fk = store_dim.store_pk
 	join prod.user_dim user_dim on kpi_fact.user_fk = user_dim.user_pk
 	where 
-		kpi_fact.project_name in ('beiersdorfru')
-		and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
+		kpi_fact.project_name in ('beiersdorfru','diageous')
+		--and kpi_fact.kpi_name in ('SOS BRAND OUT OF MANUFACTURER IN SUB CATEGORY') 
         and (kpi_fact.result_value in ('PASS','FAIL') or kpi_fact.score_value in ('PASS','FAIL')) -- PASS/FAIL need to be configurable in the future
 		and kpi_fact.visit_date >= '2020-01-01')
 select 
